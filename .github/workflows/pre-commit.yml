@@ -1,39 +1,27 @@
-name: Pre-commit
+name: pre-commit
 
 on:
   pull_request:
-    types: [opened, synchronize]
-
-permissions:
-  contents: write  # Grants write access to push changes
+  push:
+    branches: [main]
 
 jobs:
   pre-commit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0  # Fetch full commit history
-          token: ${{ secrets.GITHUB_TOKEN }}  # Allows pushing changes
-
-      - uses: actions/setup-python@v4
-        with:
-          python-version: "3.11"  # Set a consistent Python version
-
-      - name: Install dependencies
-        run: pip install --upgrade pip pre-commit  # Ensure latest pre-commit version
-
-      - name: Run pre-commit
-        run: pre-commit run --all-files --show-diff-on-failure || true  # Run all hooks without failing
-
-      - name: Check for changes and commit
-        run: |
-          if [[ `git status --porcelain` ]]; then
-            git config --global user.name "github-actions[bot]"
-            git config --global user.email "github-actions[bot]@users.noreply.github.com"
-            git add .
-            git commit -m "chore: Auto-fix pre-commit issues"
-            git push origin HEAD:${{ github.head_ref }}
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensures authentication
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v3
+    - uses: pre-commit/action@v3.0.0
+    - name: Commit changes
+      if: failure()
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_ACTOR_NAME: ${{ github.actor }}
+        GITHUB_REPOSITORY_NAME: ${{ github.repository }}
+        GITHUB_HEAD_REF: ${{ github.head_ref }}
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add -A
+        git commit -m "fix: pre-commit fixes by $GITHUB_ACTOR_NAME"
+        git push "https://$GITHUB_ACTOR_NAME:$GITHUB_TOKEN@github.com/$GITHUB_REPOSITORY_NAME.git" "HEAD:$GITHUB_HEAD_REF"
