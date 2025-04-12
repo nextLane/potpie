@@ -26,6 +26,8 @@ jobs:
       - name: Run pre-commit
         run: pre-commit run --all-files --show-diff-on-failure || true  # Run all hooks without failing
 
+      env:
+        COMMIT_MESSAGE: "${{ github.event.head_commit.message }}"
       - name: Check for changes and commit
         run: |
           if [[ `git status --porcelain` ]]; then
